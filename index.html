@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>spin siswa DKV 1</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html,body {
+      margin: 0;
+      height: 100%;
+      background: #04050b;
+      color: #f4efe6;
+      font-family: system-ui,sans-serif;
+      overflow: hidden;
+    }
+
+    /* Kanvas & lapisan efek */
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #wv {
+      display: none;
+      z-index: 1;
+      pointer-events: none;
+    }
+    #flash {
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+    #sl {
+      position: fixed;
+      inset: -30%;
+      background: repeating-conic-gradient(from 0deg,rgba(190,215,255,.7) 0 .5deg,transparent .5deg 5deg);
+      -webkit-mask: radial-gradient(circle,transparent 14%,#000 62%);
+      mask: radial-gradient(circle,transparent 14%,#000 62%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Antarmuka utama (judul, tombol GACHA) */
+    #ui {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 28px);
+      pointer-events: none;
+      z-index: 2;
+    }
+    #top {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 {
+      font-size: 14px;
+      letter-spacing: .35em;
+      margin: 0;
+      opacity: .75;
+    }
+    button {
+      pointer-events: auto;
+      font: inherit;
+      cursor: pointer;
+    }
+    .tb {
+      display: flex;
+      gap: 8px;
+    }
+    #mb,
+    #mu {
+      background: #0008;
+      color: #fff;
+      border: 1px solid #fff4;
+      border-radius: 10px;
+      font-size: 20px;
+      padding: 4px 12px;
+    }
+    #go {
+      padding: 16px 54px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .25em;
+      color: #fff;
+      border: 1px solid #7fb2ff;
+      border-radius: 99px;
+      background: linear-gradient(135deg,#ff8a2b88,#2f7bff88);
+      box-shadow: 0 0 40px #4a8cff77;
+    }
+    #go:disabled {
+      opacity: .4;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    /* Panel samping: daftar nama & hasil kelompok */
+    #dr {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(360px,100%);
+      background: #0a0c1af0;
+      border-left: 1px solid #fff2;
+      padding: calc(env(safe-area-inset-top,0px) + 56px) 16px 20px;
+      overflow: auto;
+      transform: translateX(100%);
+      transition: .3s;
+      z-index: 5;
+    }
+    #dr.o {
+      transform: none;
+    }
+    textarea,input {
+      width: 100%;
+      background: #fff1;
+      border: 1px solid #fff3;
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px;
+      font: inherit;
+    }
+    textarea {
+      height: 160px;
+    }
+    label {
+      font-size: 13px;
+      opacity: .8;
+      display: block;
+      margin: 10px 0 4px;
+    }
+    #ap {
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 0;
+      background: #ffb35c;
+      color: #210;
+      font-weight: 700;
+    }
+    .g {
+      background: #fff1;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin: 6px 0;
+      font-size: 14px;
+    }
+    .g b {
+      color: #7fb2ff;
+    }
+
+    /* Tombol reset (kiri bawah) */
+    #rst {
+      position: fixed;
+      left: 14px;
+      bottom: calc(env(safe-area-inset-bottom,0px) + 28px);
+      z-index: 3;
+      background: #0008;
+      color: #fff;
+      border: 1px solid #fff4;
+      border-radius: 99px;
+      padding: 10px 16px;
+      font-size: 14px;
+    }
+    #dr {
+      padding-bottom: 96px;
+    }
+    #cl {
+      position: fixed;
+      top: calc(env(safe-area-inset-top,0px) + 10px);
+      right: 12px;
+      z-index: 6;
+      background: #fff2;
+      color: #fff;
+      border: 1px solid #fff4;
+      border-radius: 10px;
+      font-size: 20px;
+      padding: 4px 14px;
+    }
+    #df {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: min(360px,100%);
+      padding: 12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);
+      background: #0a0c1af8;
+      border-top: 1px solid #fff2;
+      z-index: 6;
+    }
+    #df #ap {
+      margin: 0;
+    }
+
+    /* Petunjuk lewati & tabel hasil akhir */
+    #hint {
+      position: fixed;
+      top: calc(env(safe-area-inset-top,0px) + 46px);
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: .25em;
+      opacity: 0;
+      transition: opacity .4s;
+      pointer-events: none;
+      z-index: 3;
+    }
+    #fin {
+      position: fixed;
+      inset: 0;
+      z-index: 7;
+      background: radial-gradient(circle at 50% 0,#14204a 0,#04050b 70%);
+      padding: calc(env(safe-area-inset-top,0px) + 20px) 16px calc(env(safe-area-inset-bottom,0px) + 24px);
+      overflow: auto;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s;
+    }
+    #fin.o {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #fin h2 {
+      text-align: center;
+      letter-spacing: .35em;
+      font-size: clamp(16px,3vw,28px);
+      margin: 6px 0 18px;
+    }
+    #fg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(min(100%,200px),1fr));
+      gap: 12px;
+    }
+    .fc {
+      background: #ffffff12;
+      border: 1px solid #7fb2ff55;
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 0 24px #4a8cff22;
+    }
+    .fc b {
+      display: block;
+      color: #ffb35c;
+      letter-spacing: .2em;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .fc div {
+      font-size: clamp(14px,2.2vw,20px);
+      padding: 2px 0;
+    }
+    #fx {
+      display: block;
+      margin: 18px auto 0;
+      padding: 10px 28px;
+      border-radius: 99px;
+      border: 1px solid #fff4;
+      background: #fff1;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Kanvas: galaksi (WebGL) dan gelombang suara (2D) -->
+  <canvas id="c"></canvas>
+  <canvas id="wv"></canvas>
+  <div id="sl"></div>
+  <div id="flash"></div>
+
+  <!-- Antarmuka utama -->
+  <div id="ui">
+    <div id="top">
+      <h1>SPIN KELOMPOK</h1>
+      <div class="tb">
+        <button id="mu" aria-label="Suara">🔊</button>
+        <button id="mb">☰</button>
+      </div>
+    </div>
+    <button id="go">SPIN</button>
+  </div>
+  <button id="rst">↺ Reset</button>
+
+  <!-- Panel samping: daftar nama, jumlah kelompok, hasil -->
+  <aside id="dr">
+    <button id="cl" aria-label="Tutup">✕</button>
+    <label>Daftar nama </label>
+    <textarea id="tx"></textarea>
+    <label>Jumlah kelompok</label>
+    <input id="gn" type="number" min="1" value="6">
+    <h3>Hasil</h3>
+    <div id="gl"></div>
+    <div id="df"><button id="ap">Terapkan</button></div>
+  </aside>
+
+  <!-- Petunjuk lewati animasi & tabel hasil akhir -->
+  <div id="hint">TAP LAYAR UNTUK LEWATI</div>
+  <div id="fin">
+    <h2>HASIL KELOMPOK</h2>
+    <div id="fg"></div>
+    <button id="fx">Tutup</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // ==================== Utilitas & renderer Three.js ====================
+    const $ = i => document.getElementById(i);
+    const cv = $('c');
+    const ren = new THREE.WebGLRenderer({ canvas: cv, antialias: false, preserveDrawingBuffer: true });
+    ren.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    ren.setClearColor(0x04050b);
+    ren.autoClear = false;
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(60, 1, .02, 100);
+    function rs() {
+        ren.setSize(innerWidth, innerHeight, false);
+        cam.aspect = innerWidth / innerHeight;
+        cam.updateProjectionMatrix();
+    }
+
+    addEventListener('resize', rs);
+    rs();
+    const VS = `uniform float uTime,uSize,uPix;attribute float aScale;attribute float aRot;attribute vec3 aColor;varying vec3 vC;varying float vR;
+void main(){vec4 m=modelMatrix*vec4(position,1.);float a=atan(m.x,m.z),d=length(m.xz);
+a+=(.7/max(d,.9)+.06)*uTime;m.x=cos(a)*d;m.z=sin(a)*d;
+vec4 v=viewMatrix*m;gl_Position=projectionMatrix*v;
+gl_PointSize=min(uSize*aScale*(1.+d*.04)*uPix/max(-v.z,.05),34.);vC=aColor;vR=aRot+uTime*aScale*.5;}`;
+    const FS = `uniform float uSq;uniform float uAlpha;varying vec3 vC;varying float vR;
+void main(){float s;if(uSq>.5){float dd=distance(gl_PointCoord,vec2(.5));s=uAlpha*smoothstep(.5,.34,dd)*(.7+.6*(1.-dd*2.));}
+else{s=1.-distance(gl_PointCoord,vec2(.5))*2.;s=pow(max(s,0.),3.)*uAlpha;}gl_FragColor=vec4(vC*s,s);}`;
+
+    // ==================== Partikel galaksi (debu + serpihan) ====================
+    const RAD = 18;
+    const BR = 3;
+    const SPIN = .37;
+    const cIn = new THREE.Color('#ff8a4a');
+    const cMid = new THREE.Color('#ff4fa0');
+    const cOut = new THREE.Color('#2f7bff');
+    const tmp = new THREE.Color();
+    function make(count, size, rnd, sq, alpha) {
+        const pos = new Float32Array(count * 3);
+        const col = new Float32Array(count * 3);
+        const sc = new Float32Array(count);
+        const rot = new Float32Array(count);
+        const rp = (r, k) => Math.pow(Math.random(), 3) * (Math.random() < .5 ? 1 : -1) * rnd * r * k;
+        for (let i = 0; i < count; i++) {
+            const k = sq ? 1 : (Math.random() < .4 ? 2.4 : .3);
+            const r = Math.pow(Math.random(), 1.4) * RAD;
+            const ba = (i % BR) / BR * 6.2832;
+            const sa = r * SPIN;
+            const t = r / RAD;
+            pos[i * 3] = Math.cos(ba + sa) * r + rp(r, k);
+            pos[i * 3 + 1] = (Math.random() + Math.random() + Math.random() - 1.5) * (.25 + RAD * .012) * (sq ? 3 : 1) + (Math.random() - .5) * RAD * .28 * Math.exp(-r / (RAD * .12));
+            pos[i * 3 + 2] = Math.sin(ba + sa) * r + rp(r, k);
+            if (t < .5)
+                tmp.copy(cIn).lerp(cMid, t * 2);
+            else
+                tmp.copy(cMid).lerp(cOut, (t - .5) * 2);
+            if (Math.random() < .2)
+                tmp.set(Math.random() < .5 ? '#3d8bff' : '#5fd4ff');
+            col[i * 3] = tmp.r;
+            col[i * 3 + 1] = tmp.g;
+            col[i * 3 + 2] = tmp.b;
+            sc[i] = .3 + Math.random();
+            rot[i] = Math.random() * 6.2832;
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        g.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+        g.setAttribute('aScale', new THREE.BufferAttribute(sc, 1));
+        g.setAttribute('aRot', new THREE.BufferAttribute(rot, 1));
+        const m = new THREE.ShaderMaterial({ vertexShader: VS, fragmentShader: FS, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+            uniforms: { uTime: { value: 0 }, uSize: { value: size }, uPix: { value: ren.getPixelRatio() }, uSq: { value: sq }, uAlpha: { value: alpha } } });
+        scene.add(new THREE.Points(g, m));
+        return m;
+    }
+
+    const dust = make(100000, 60, .45, 0, 1);
+    const shards = make(5000, 160, .7, 1, .6);
+
+    // ==================== Sprite titik terang: bintang, halo, cincin, kilau ====================
+    function tex(fn) {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const g = c.getContext('2d');
+        fn(g);
+        return new THREE.CanvasTexture(c);
+    }
+
+    const glowT = tex(g => {
+        const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+        r.addColorStop(0, '#fff');
+        r.addColorStop(.25, 'rgba(190,220,255,.8)');
+        r.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = r;
+        g.fillRect(0, 0, 128, 128);
+    });
+
+    const ringT = tex(g => {
+        g.strokeStyle = '#bfe0ff';
+        g.lineWidth = 5;
+        g.shadowColor = '#4a8cff';
+        g.shadowBlur = 14;
+        g.beginPath();
+        g.arc(64, 64, 46, 0, 6.283);
+        g.stroke();
+    });
+
+    const flareT = tex(g => {
+        g.translate(64, 64);
+        const spike = (len, w, a) => {
+            g.save();
+            g.rotate(a);
+            const gr = g.createLinearGradient(-len, 0, len, 0);
+            gr.addColorStop(0, 'rgba(255,255,255,0)');
+            gr.addColorStop(.5, 'rgba(255,255,255,.95)');
+            gr.addColorStop(1, 'rgba(255,255,255,0)');
+            g.fillStyle = gr;
+            g.beginPath();
+            g.moveTo(-len, 0);
+            g.lineTo(0, -w);
+            g.lineTo(len, 0);
+            g.lineTo(0, w);
+            g.closePath();
+            g.fill();
+            g.restore();
+        };
+        spike(62, 3.2, 0);
+        spike(62, 3.2, Math.PI / 2);
+        spike(34, 1.8, Math.PI / 4);
+        spike(34, 1.8, -Math.PI / 4);
+    });
+
+    const SP = [];
+    const mk = (t, col) => {
+        const m = new THREE.SpriteMaterial({ map: t, color: col, transparent: true, opacity: 0, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending });
+        const s = new THREE.Sprite(m);
+        scene.add(s);
+        SP.push(s);
+        return s;
+    };
+
+    const starM = mk(glowT, 0xffffff);
+    const haloM = mk(glowT, 0x3d7bff);
+    const ringM = mk(ringT, 0x8fc4ff);
+    const ring2 = mk(ringT, 0xffa860);
+    const flareM = mk(flareT, 0xffffff);
+    const target = new THREE.Vector3();
+
+    // ==================== Lapisan gelap untuk transisi ====================
+    const fScene = new THREE.Scene();
+    const fCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const fMat = new THREE.MeshBasicMaterial({ color: 0x04050b, transparent: true, opacity: 1, depthTest: false, depthWrite: false });
+    fScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), fMat));
+
+    // ==================== Animasi kamera: zoom ke titik terang (galaksi) ====================
+    const sm = (a, b, x) => {
+        x = Math.min(1, Math.max(0, (x - a) / (b - a)));
+        return x * x * (3 - 2 * x);
+    };
+
+    const D = 7;
+    const clock = new THREE.Clock();
+    const flash = $('flash');
+    const sl = $('sl');
+    const pB = new THREE.Vector3();
+    const look = new THREE.Vector3();
+    const O = new THREE.Vector3();
+    const UP = new THREE.Vector3(0, 1, 0);
+    const C = new THREE.Vector3();
+    const E = new THREE.Vector3();
+    const dv = new THREE.Vector3();
+    const side = new THREE.Vector3();
+    let tA = 0;
+    let state = 'idle';
+    let t0 = 0;
+    let cur = null;
+    let sgn = 1;
+    let hit = -9;
+    let rp = 0;
+    function tick() {
+        const dt = Math.min(clock.getDelta(), .05);
+        const t = clock.elapsedTime;
+        const pull = state === 'pull';
+        let u = 0;
+        if (pull) {
+            u = (t - t0) / D;
+            if (u >= 1)
+                finish(t);
+        }
+        const pl = state === 'pull';
+        const zz = pl ? sm(.1, .9, u) : 0;
+        const q = Math.pow(Math.min(1, Math.max(0, (u - .04) / .86)), 1.9);
+        tA += dt * (1 + (pl ? 4 * sm(0, .2, u) + 12 * Math.pow(sm(.5, .9, u), 2) : 0));
+        dust.uniforms.uTime.value = tA;
+        shards.uniforms.uTime.value = tA;
+        const phi = .95 + Math.sin(t * .25) * .03;
+        const th = .6 + Math.sin(t * .15) * .12;
+        pB.set(22 * Math.sin(phi) * Math.cos(th), 22 * Math.cos(phi) + .02, 22 * Math.sin(phi) * Math.sin(th));
+        let roll = 0;
+        if (pl) {
+            dv.copy(target).sub(pB);
+            side.crossVectors(dv, UP).normalize();
+            C.copy(pB).addScaledVector(dv, .45).addScaledVector(side, 3 * sgn);
+            C.y += 1.5;
+            E.copy(pB).sub(target).normalize().multiplyScalar(.12).add(target);
+            const a = (1 - q) * (1 - q);
+            const b = 2 * (1 - q) * q;
+            const c = q * q;
+            cam.position.set(pB.x * a + C.x * b + E.x * c, pB.y * a + C.y * b + E.y * c, pB.z * a + C.z * b + E.z * c);
+            look.lerpVectors(O, target, sm(0, .35, u));
+            roll = Math.sin(q * 3.1416) * .12 * sgn;
+        }
+        else {
+            cam.position.copy(pB);
+            look.copy(O);
+        }
+        cam.up.copy(UP);
+        cam.fov = pl ? 60 + 50 * Math.pow(sm(.35, .92, u), 1.5) : 60;
+        cam.updateProjectionMatrix();
+        cam.lookAt(look);
+        cam.rotateZ(roll);
+        const on = pl ? sm(0, .04, u) : 0;
+        const on2 = on;
+        rp += dt * (.9 + 2.5 * zz);
+        const S = (s, v) => {
+            s.scale.setScalar(v);
+            s.position.copy(target);
+        };
+        const bg = 1 + zz * zz * 1.5;
+        const su = Math.max(.12 * bg, .04 * cam.position.distanceTo(target));
+        starM.material.opacity = on;
+        S(starM, su * (1 + Math.sin(t * 14) * .1));
+        haloM.material.opacity = on2 * .5;
+        S(haloM, su * 4 * (1 + Math.sin(t * 5) * .1));
+        flareM.material.opacity = on2 * .8;
+        S(flareM, su * 7 * (1 + Math.sin(t * 9) * .1));
+        const ph = rp % 1;
+        const ph2 = (rp + .5) % 1;
+        ringM.material.opacity = on2 * (1 - ph) * .9;
+        S(ringM, su * (.6 + ph * 10));
+        ring2.material.opacity = on2 * (1 - ph2) * .9;
+        S(ring2, su * (.6 + ph2 * 10));
+        fMat.opacity = pl ? 1 - .82 * sm(.15, .55, u) * (1 - sm(.9, .99, u)) : 1;
+        let amp = Math.max(0, 1 - (t - hit) / .7) * 16;
+        if (pl) {
+            amp += 3 * sm(0, .04, u) * (1 - sm(.06, .16, u)) + 8 * Math.pow(sm(.55, .92, u), 2);
+            flash.style.opacity = Math.max(sm(.9, .985, u), u < .05 ? .5 * (1 - u / .05) : 0);
+            sl.style.opacity = .75 * sm(.5, .68, u) * (1 - sm(.86, .95, u));
+            sl.style.transform = `scale(${1 + zz * 1.2}) rotate(${t * 30}deg)`;
+        }
+        cv.style.transform = amp > .1 ? `translate(${(Math.random() - .5) * amp}px,${(Math.random() - .5) * amp}px) scale(1.03)` : '';
+        if (!((state === 'wave' || state === 'show') && WF.covered())) {
+            ren.render(fScene, fCam);
+            ren.render(scene, cam);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    tick();
+
+    // ==================== Animasi gelombang suara (36 gaya, kanvas 2D) ====================
+    const WF = (() => {
+        const cv = document.getElementById('wv');
+        const g = cv.getContext('2d');
+        let W;
+        let H;
+        function rs() {
+            const D = Math.min(devicePixelRatio || 1, 2);
+            W = cv.clientWidth;
+            H = cv.clientHeight;
+            cv.width = W * D;
+            cv.height = H * D;
+            g.setTransform(D, 0, 0, D, 0, 0);
+        }
+        addEventListener('resize', rs);
+        const T = 5.5;
+        const sm = (a, b, x) => {
+            x = Math.min(1, Math.max(0, (x - a) / (b - a)));
+            return x * x * (3 - 2 * x);
+        };
+        function mul(a) {
+            return () => {
+                a |= 0;
+                a = a + 0x6D2B79F5 | 0;
+                let t = Math.imul(a ^ a >>> 15, 1 | a);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+        const R = mul(7);
+        const PS = Array.from({ length: 110 }, () => ({ a: R() * 6.283, r: .35 + R() * .9, s: .5 + R() * 1.5, z: 1 + R() * 2.5 }));
+        const LN = Array.from({ length: 48 }, () => ({ a: R() * 6.283, l: .3 + R() * .9 }));
+        const P = [['#ff3b2f', '#ff9a7a', '#ffffff', '#12030a'], ['#8a4dff', '#d9a8ff', '#ffffff', '#07041a'], ['#ffb02e', '#ffe7a0', '#ffffff', '#0b0603'], ['#3d7bff', '#8fe9ff', '#ffffff', '#030818'], ['#ff3fb4', '#38ffd0', '#ffe94a', '#04070a'], ['#2cff8a', '#c8ffe0', '#ffffff', '#030d07'], ['#ff7a1a', '#ffd23f', '#ffffff', '#100500'], ['#19d3ff', '#ff4fd8', '#ffffff', '#02060d']];
+        const TN = ['sq', 'ring', 'shard', 'glitch', 'grid', 'spiral', 'hex', 'tri', 'stars', 'rain', 'beams', 'ripple'];
+        const S = Array.from({ length: 36 }, (_, i) => {
+            const b = i / 12 | 0;
+            const p = P[(i * 5 + b) % 8];
+            return { c: p.slice(0, 3), bg: p[3], tun: TN[i % 12], wv: (i * 7 + b) % 15, bt: (i * 5 + b * 2) % 12, mo: (i + b) % 5 };
+        });
+        let anim = null;
+        let deck = [];
+        let count = 0;
+        let fading = false;
+        // percikan cahaya yang naik, dan kilau di sekitar nama (dibuat sekali)
+        const EM = Array.from({ length: 120 }, () => ({ x: Math.random(), v: .15 + Math.random() * .5, o: Math.random(), w: 1 + Math.random() * 3, a: .4 + Math.random() * .6, z: 1 + Math.random() * 2 }));
+        const SPK = Array.from({ length: 18 }, () => ({ ax: Math.random() - .5, ay: Math.random() * 2 - 1, ph: Math.random() * 6.28, sz: 5 + Math.random() * 9 }));
+        // ---- motif dari video referensi: rol film, jam, orbit, mesin jam (roda gigi), dan taman (tanaman merambat) ----
+        const TAU = 6.2832;
+        // ---- taman: tanaman merambat (batang dibuat sekali, lalu digambar tumbuh mengikuti build) ----
+        const VN = [[.02, 1.02, -1.0], [.98, 1.02, -2.1], [-.02, .62, -.4], [1.02, .55, -2.7], [.1, -.02, 1.2], [.92, -.02, 1.9]].map(([x, y, th]) => ({
+            x, y, th, ph: Math.random() * 6.28,
+            da: Array.from({ length: 64 }, (_, i) => (Math.random() - .5) * .55 + Math.sin(i * .35 + th) * .09)
+        }));
+        const FF = Array.from({ length: 22 }, () => ({ x: Math.random(), y: Math.random(), p: Math.random() * 6.28, s: .3 + Math.random() * .8 }));
+        function leaf(x, y, a, len, c, al) {
+            g.save();
+            g.translate(x, y);
+            g.rotate(a);
+            g.beginPath();
+            g.moveTo(0, 0);
+            g.quadraticCurveTo(len * .5, -len * .38, len, 0);
+            g.quadraticCurveTo(len * .5, len * .38, 0, 0);
+            g.globalAlpha = al * .4;
+            g.fillStyle = c[0];
+            g.fill();
+            g.globalAlpha = al;
+            g.strokeStyle = c[1];
+            g.lineWidth = 1.4;
+            g.stroke();
+            g.beginPath();
+            g.moveTo(0, 0);
+            g.lineTo(len * .85, 0);
+            g.globalAlpha = al * .6;
+            g.stroke();
+            g.restore();
+        }
+        function flower(x, y, r, rot, c, al) {
+            g.save();
+            g.translate(x, y);
+            g.rotate(rot);
+            for (let i = 0; i < 5; i++) {
+                const a = i / 5 * TAU;
+                g.beginPath();
+                g.ellipse(Math.cos(a) * r * .55, Math.sin(a) * r * .55, r * .5, r * .28, a, 0, TAU);
+                g.globalAlpha = al * .5;
+                g.fillStyle = '#fff';
+                g.fill();
+                g.globalAlpha = al;
+                g.strokeStyle = c[1];
+                g.lineWidth = 1.4;
+                g.stroke();
+            }
+            g.beginPath();
+            g.arc(0, 0, r * .2, 0, TAU);
+            g.globalAlpha = al;
+            g.fillStyle = c[0];
+            g.fill();
+            g.restore();
+        }
+        function drawMotif(mo, t, bd, after, k, cx, cy, m, c) {
+            const fade = after ? Math.max(0, 1 - sm(0, .9, k) * .85) : 1;
+            if (mo === 0) {                                   // rol film: cincin berputar + dua pita film bergulir
+                const R = Math.min(W, H) * .36;
+                g.save();
+                g.translate(cx, cy);
+                g.rotate(t * .25 * (1 + bd * 2));
+                g.strokeStyle = c[1];
+                g.globalAlpha = (.12 + .5 * bd) * fade;
+                g.lineWidth = 2;
+                g.beginPath();
+                g.arc(0, 0, R, 0, TAU);
+                g.moveTo(R * .82, 0);
+                g.arc(0, 0, R * .82, 0, TAU);
+                g.stroke();
+                for (let i = 0; i < 24; i++) {
+                    g.save();
+                    g.rotate(i / 24 * TAU);
+                    g.translate(R * .91, 0);
+                    g.globalAlpha = (.1 + .22 * bd) * fade;
+                    g.fillStyle = c[i % 2];
+                    g.fillRect(-9, -14, 18, 28);
+                    g.restore();
+                }
+                g.setLineDash([4, 12]);
+                g.lineWidth = 3;
+                g.globalAlpha = (.2 + .5 * bd) * fade;
+                g.beginPath();
+                g.arc(0, 0, R * 1.05, 0, TAU);
+                g.stroke();
+                g.setLineDash([]);
+                g.restore();
+                for (const [y, dir] of [[cy - H * .27, 1], [cy + H * .27, -1]]) {
+                    const off = (t * (60 + bd * 260) * dir) % 70;
+                    g.globalAlpha = (.08 + .12 * bd) * fade;
+                    g.fillStyle = c[0];
+                    g.fillRect(0, y - 27, W, 54);
+                    g.globalAlpha = (.25 + .45 * bd) * fade;
+                    g.strokeStyle = c[1];
+                    g.lineWidth = 2;
+                    g.beginPath();
+                    for (let x = -70 + off; x < W + 70; x += 70)
+                        g.rect(x + 6, y - 19, 58, 38);
+                    g.stroke();
+                    g.fillStyle = c[1];
+                    g.beginPath();
+                    for (let x = -18 + off % 18; x < W + 18; x += 18) {
+                        g.rect(x, y - 25, 8, 4);
+                        g.rect(x, y + 21, 8, 4);
+                    }
+                    g.fill();
+                }
+            }
+            else if (mo === 1) {                              // jam: roda gigi, penanda 12, jarum yang mempercepat lalu berhenti
+                const R = Math.min(W, H) * .3, tt = after ? T * .62 : t, ma = tt * tt * .9;
+                g.save();
+                g.translate(cx, cy);
+                g.globalAlpha = (.2 + .5 * bd) * (after ? Math.max(.25, 1 - k) : 1);
+                g.strokeStyle = c[1];
+                g.lineWidth = 3;
+                g.beginPath();
+                g.arc(0, 0, R, 0, TAU);
+                g.moveTo(R * .9, 0);
+                g.arc(0, 0, R * .9, 0, TAU);
+                g.stroke();
+                g.save();
+                g.rotate(tt * .4 * (1 + bd * 2));
+                g.setLineDash([10, 14]);
+                g.lineWidth = 14;
+                g.beginPath();
+                g.arc(0, 0, R * 1.08, 0, TAU);
+                g.stroke();
+                g.restore();
+                g.lineWidth = 4;
+                g.beginPath();
+                for (let i = 0; i < 12; i++) {
+                    const a = i / 12 * TAU;
+                    g.moveTo(Math.sin(a) * R * .78, -Math.cos(a) * R * .78);
+                    g.lineTo(Math.sin(a) * R * .9, -Math.cos(a) * R * .9);
+                }
+                g.stroke();
+                for (const [len, ang, lw, col] of [[.55, ma / 12, 7, '#fff'], [.78, ma, 4, '#fff'], [.85, Math.floor(tt * (3 + bd * 8)) * .5236, 2, c[0]]]) {
+                    g.strokeStyle = col;
+                    g.lineWidth = lw;
+                    g.beginPath();
+                    g.moveTo(0, 0);
+                    g.lineTo(Math.sin(ang) * R * len, -Math.cos(ang) * R * len);
+                    g.stroke();
+                }
+                g.restore();
+            }
+            else if (mo === 2) {                              // orbit: cincin bertitik miring, satelit, dan garis lintasan
+                const R0 = Math.min(W, H) * .2;
+                g.save();
+                g.translate(cx, cy);
+                for (let j = 0; j < 4; j++) {
+                    const R = R0 * (1 + j * .42), rot = t * (.25 + j * .12) * (j % 2 ? -1 : 1) * (1 + bd);
+                    g.save();
+                    g.rotate(rot);
+                    g.scale(1, .32 + .1 * j);
+                    g.setLineDash([2, 9]);
+                    g.lineWidth = 2.5;
+                    g.strokeStyle = c[1];
+                    g.globalAlpha = (.15 + .5 * bd) * fade;
+                    g.beginPath();
+                    g.arc(0, 0, R, 0, TAU);
+                    g.stroke();
+                    g.setLineDash([]);
+                    const a = t * (1.2 + j * .5) * (1 + bd);
+                    g.globalAlpha = (.5 + .5 * bd) * fade;
+                    g.fillStyle = '#fff';
+                    g.beginPath();
+                    g.arc(Math.cos(a) * R, Math.sin(a) * R, 4 - j * .4, 0, TAU);
+                    g.fill();
+                    g.restore();
+                }
+                g.restore();
+                g.strokeStyle = c[1];
+                g.lineWidth = 1.5;
+                for (let i = 0; i < 14; i++) {
+                    const q2 = PS[i], y = q2.r % 1 * H, off = (t * (80 + bd * 300) * (.5 + q2.s) + q2.a * 400) % (W * 1.6) - W * .3, len = 90 + q2.z * 60;
+                    g.globalAlpha = (.12 + .35 * bd) * fade;
+                    g.beginPath();
+                    g.moveTo(off, y);
+                    g.lineTo(off + len, y + len * .12);
+                    g.stroke();
+                }
+            }
+            else if (mo === 3) {                              // mesin jam: roda gigi saling mengait, roda keseimbangan, dan pegas rambut
+                const u = Math.min(W, H), md = u * .016, tt = after ? T * .62 : t, base = tt * (.35 + bd * 1.9) + bd * bd * tt * .6;
+                const drift = after ? sm(0, 1, k) * m * .25 : 0, fa = after ? Math.max(0, 1 - sm(0, .8, k)) : 1, al = (.18 + .5 * bd) * fa;
+                g.lineJoin = 'round';
+                // dua rantai roda gigi: [x, y, jumlah gigi, sudut awal, arah], lalu tiap roda berikutnya: [sudut sambungan, jumlah gigi]
+                const chains = [
+                    { x: W * .17, y: H * .13, n: 32, a0: 0, dir: 1, links: [[.6, 20], [-.35, 26], [.9, 14]] },
+                    { x: W * .86, y: H * .87, n: 36, a0: 1.2, dir: -1, links: [[Math.PI + .5, 18], [Math.PI - .45, 24]] }
+                ];
+                for (const ch of chains) {
+                    let px = ch.x, py = ch.y, pn = ch.n, pa = ch.a0 + base * ch.dir * 12 / ch.n;
+                    gear(px, py, pn, pa, al, c, md, drift, cx, cy);
+                    for (const [phi, n] of ch.links) {
+                        const r1 = pn * md / 2, r2 = n * md / 2;
+                        px += (r1 + r2) * Math.cos(phi);
+                        py += (r1 + r2) * Math.sin(phi);
+                        pa = -(pn / n) * pa + (1 + pn / n) * phi + Math.PI / n;        // rumus roda gigi yang saling mengait
+                        pn = n;
+                        gear(px, py, n, pa, al, c, md, drift, cx, cy);
+                    }
+                }
+                // roda keseimbangan yang berayun cepat + pegas rambut berbentuk spiral
+                const bx = cx, by = H * .8, br = u * .13, ba = after ? 0 : Math.sin(tt * 5) * 1.0;
+                g.save();
+                g.translate(bx, by + drift * .4);
+                g.rotate(ba);
+                g.globalAlpha = al;
+                g.strokeStyle = c[1];
+                g.lineWidth = 3;
+                g.beginPath();
+                g.arc(0, 0, br, 0, TAU);
+                for (let i = 0; i < 3; i++) {
+                    const a = i / 3 * TAU + .5;
+                    g.moveTo(0, 0);
+                    g.lineTo(Math.cos(a) * br, Math.sin(a) * br);
+                    g.moveTo(Math.cos(a) * br + 7, Math.sin(a) * br);
+                    g.arc(Math.cos(a) * br, Math.sin(a) * br, 7, 0, TAU);
+                }
+                g.stroke();
+                g.lineWidth = 1.8;
+                g.beginPath();
+                for (let i = 0; i <= 120; i++) {
+                    const f = i / 120, a = f * 4 * TAU, rr = br * (.12 + .5 * f);
+                    i ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+                }
+                g.stroke();
+                g.restore();
+            }
+            else {                                            // taman: tanaman merambat tumbuh, berdaun, bersulur, berbunga, dan kunang-kunang
+                const sc = Math.min(W, H) / 1000, gr = sm(0, .9, bd), fa = after ? Math.max(0, 1 - sm(0, .9, k)) : 1, bloom = sm(.5, 1, bd), fly = after ? sm(0, 1, k) : 0;
+                g.lineCap = 'round';
+                g.lineJoin = 'round';
+                for (const v of VN) {
+                    const n = Math.max(2, Math.floor(64 * gr)), P = [];
+                    let px = v.x * W, py = v.y * H, a = v.th;
+                    for (let i = 0; i < n; i++) {                 // titik batang: melengkung acak dan bergoyang pelan
+                        a += v.da[i];
+                        const sw = Math.sin(t * 1.2 + v.ph + i * .12) * 7 * sc * i / 64;
+                        px += Math.cos(a) * 22 * sc;
+                        py += Math.sin(a) * 22 * sc;
+                        P.push([px + sw * -Math.sin(a), py + sw * Math.cos(a), a]);
+                    }
+                    g.globalAlpha = (.3 + .5 * bd) * fa;
+                    g.strokeStyle = c[1];
+                    g.lineWidth = 3.2;
+                    g.beginPath();
+                    P.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y));
+                    g.stroke();
+                    for (let i = 3; i < P.length; i += 4) {       // daun berselang-seling, membesar saat batang tumbuh melewatinya
+                        const [x, y, h] = P[i], grow = Math.min(1, (P.length - i) / 8), side = (i / 4 | 0) % 2 ? 1 : -1, len = (26 + 12 * Math.sin(i)) * sc * 1.6 * grow;
+                        leaf(x + fly * side * 40, y + fly * 60 + fly * fly * 80, h + side * 1.0 + Math.sin(t * 1.5 + i) * .08, len, c, (.5 + .4 * bd) * fa);
+                    }
+                    g.strokeStyle = c[1];
+                    g.lineWidth = 1.6;
+                    g.globalAlpha = (.3 + .4 * bd) * fa;
+                    for (let i = 7; i < P.length; i += 13) {      // sulur melingkar
+                        const [x, y, h] = P[i], ox = x + Math.cos(h + 1.4) * 8 * sc * 1.6, oy = y + Math.sin(h + 1.4) * 8 * sc * 1.6;
+                        g.beginPath();
+                        for (let j = 0; j < 14; j++) {
+                            const rr = (1 - j / 14) * 18 * sc * 1.6, aa = h + 1.2 + j * .55;
+                            j ? g.lineTo(ox + Math.cos(aa) * rr, oy + Math.sin(aa) * rr) : g.moveTo(ox + Math.cos(aa) * rr, oy + Math.sin(aa) * rr);
+                        }
+                        g.stroke();
+                    }
+                    for (let i = 10; i < P.length; i += 20) {     // bunga mekar di ruas batang
+                        const [x, y] = P[i];
+                        flower(x + (x - cx) * fly * .5, y + (y - cy) * fly * .5, (12 + 8 * Math.sin(i)) * sc * 1.6 * bloom, t * .3, c, (.6 * bloom) * fa);
+                    }
+                    if (gr > .85) {                               // bunga di ujung batang
+                        const [x, y] = P[P.length - 1];
+                        flower(x + (x - cx) * fly * .5, y + (y - cy) * fly * .5, 18 * sc * 1.6 * bloom, -t * .3, c, .7 * bloom * fa);
+                    }
+                }
+                g.fillStyle = '#fff';
+                for (const f of FF) {                              // kunang-kunang
+                    const x = (f.x + Math.sin(t * .4 * f.s + f.p) * .05) * W, y = (f.y + Math.cos(t * .5 * f.s + f.p * 2) * .05) * H, tw = .5 + .5 * Math.sin(t * 3 * f.s + f.p);
+                    g.globalAlpha = (.15 + .6 * bd) * tw * fa;
+                    g.beginPath();
+                    g.arc(x, y, 2.2 + 2 * tw, 0, TAU);
+                    g.fill();
+                }
+            }
+        }
+        // satu roda gigi: gigi trapesium, cincin dalam, jari-jari, dan lubang
+        function gear(x, y, n, a, al, c, md, drift, cx, cy) {
+            const r = n * md / 2, th = r * .22, step = TAU / n;
+            const dx = x - cx, dy = y - cy, l = Math.hypot(dx, dy) || 1;
+            g.save();
+            g.translate(x + dx / l * drift, y + dy / l * drift);
+            g.rotate(a + drift * .002);
+            g.beginPath();
+            for (let i = 0; i < n; i++) {
+                const a0 = i * step, pts = [[-.27, r * .94], [-.13, r + th], [.13, r + th], [.27, r * .94]];
+                pts.forEach(([da, rr], j) => {
+                    const px = Math.cos(a0 + da * step) * rr, py = Math.sin(a0 + da * step) * rr;
+                    i || j ? g.lineTo(px, py) : g.moveTo(px, py);
+                });
+            }
+            g.closePath();
+            g.globalAlpha = al * .35;
+            g.fillStyle = c[0];
+            g.fill();
+            g.globalAlpha = al;
+            g.strokeStyle = c[1];
+            g.lineWidth = 2.2;
+            g.stroke();
+            g.beginPath();
+            g.arc(0, 0, r * .72, 0, TAU);
+            g.moveTo(r * .2, 0);
+            g.arc(0, 0, r * .2, 0, TAU);
+            for (let i = 0; i < 5; i++) {
+                const sa = i / 5 * TAU;
+                g.moveTo(Math.cos(sa) * r * .2, Math.sin(sa) * r * .2);
+                g.lineTo(Math.cos(sa) * r * .72, Math.sin(sa) * r * .72);
+                const hx = Math.cos(sa + .6) * r * .47, hy = Math.sin(sa + .6) * r * .47;
+                g.moveTo(hx + r * .08, hy);
+                g.arc(hx, hy, r * .08, 0, TAU);
+            }
+            g.stroke();
+            g.restore();
+        }
+        function wavePath(cx, cy, w, amp, wp, off) {
+            const N = 150;
+            const top = [];
+            for (let i = 0; i <= N; i++) {
+                const u = i / N * 2 - 1;
+                const e = Math.pow(1 - Math.abs(u), 2.1) * .8 + .2 * (1 - Math.abs(u));
+                const sp = Math.abs(Math.sin(u * 37 + off + wp) * Math.sin(u * 13.7 - wp * .6 + off) + .5 * Math.sin(u * 71 + wp * 1.7));
+                top.push([cx + u * w / 2, amp * e * (.18 + .82 * Math.min(1, sp))]);
+            }
+            g.beginPath();
+            top.forEach((p, i) => i ? g.lineTo(p[0], cy - p[1]) : g.moveTo(p[0], cy - p[1]));
+            for (let i = N; i >= 0; i--)
+                g.lineTo(top[i][0], cy + top[i][1]);
+            g.closePath();
+        }
+        function star(cx, cy, r, rot) {
+            g.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const a = i * Math.PI / 4 + rot;
+                const q = i % 2 ? r * .1 : r;
+                i ? g.lineTo(cx + Math.cos(a) * q, cy + Math.sin(a) * q) : g.moveTo(cx + Math.cos(a) * q, cy + Math.sin(a) * q);
+            }
+            g.closePath();
+        }
+        function poly(n, r) {
+            g.beginPath();
+            for (let i = 0; i < n; i++) {
+                const a = i / n * 6.2832;
+                i ? g.lineTo(Math.cos(a) * r, Math.sin(a) * r) : g.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+            }
+            g.closePath();
+            g.stroke();
+        }
+        function render(t, st, name) {
+            const p = name ? Math.min(1, t / T) : 0;
+            const build = name ? sm(0, .6, p) : 0;
+            const bp = .62;
+            const after = name && p >= bp;
+            const k = after ? (p - bp) / (1 - bp) : 0;
+            const cx = W / 2;
+            const cy = H * .44;
+            const m = Math.max(W, H);
+            const c = st.c;
+            g.save();
+            g.globalCompositeOperation = 'source-over';
+            g.globalAlpha = 1;
+            if (name && p > bp - .02 && p < bp + .12) {
+                const s = (1 - (p - bp + .02) / .14) * 14;
+                g.translate((Math.random() - .5) * s, (Math.random() - .5) * s);
+            }
+            if (name && after && k < .3) {
+                const z = 1 + .07 * Math.pow(1 - k / .3, 2);
+                g.translate(cx, cy);
+                g.scale(z, z);
+                g.translate(-cx, -cy);
+            }
+            g.fillStyle = st.bg;
+            g.fillRect(-20, -20, W + 40, H + 40);
+            g.globalCompositeOperation = 'lighter';
+            const ph = t * .25 + 5 * build * build;
+            const rot = t * .2;
+            const n = 16;
+            for (let i = 0; i < n; i++) {
+                const s = ((i + ph) % n) / n;
+                const sz = s * s * m * 1.1 + 4;
+                g.save();
+                g.translate(cx, cy);
+                g.rotate(rot * s + s * 1.2 * (1 + build));
+                g.globalAlpha = Math.sin(s * Math.PI) * .5 * (.3 + build * .7);
+                g.strokeStyle = c[i % 2];
+                g.lineWidth = 1 + s * 3;
+                if (st.tun === 'ring') {
+                    g.beginPath();
+                    g.arc(0, 0, sz * .7, 0, 6.283);
+                    g.setLineDash([sz * .2, sz * .08]);
+                    g.stroke();
+                    g.setLineDash([]);
+                }
+                else if (st.tun === 'hex')
+                    poly(6, sz * .6);
+                else if (st.tun === 'tri')
+                    poly(3, sz * .7);
+                else if (['sq', 'shard', 'glitch'].includes(st.tun))
+                    g.strokeRect(-sz / 2, -sz / 2, sz, sz);
+                g.restore();
+            }
+            g.globalAlpha = 1;
+            if (st.tun === 'shard') {
+                g.strokeStyle = c[0];
+                for (const l of LN) {
+                    g.globalAlpha = .35 + .4 * build;
+                    g.lineWidth = l.l * 2;
+                    const r0 = m * .08 * (1 - build * .5);
+                    g.beginPath();
+                    g.moveTo(cx + Math.cos(l.a) * r0, cy + Math.sin(l.a) * r0);
+                    g.lineTo(cx + Math.cos(l.a) * (r0 + l.l * m * .6 * (.3 + build)), cy + Math.sin(l.a) * (r0 + l.l * m * .6 * (.3 + build)));
+                    g.stroke();
+                }
+            }
+            if (st.tun === 'glitch' && build > .25) {
+                for (let i = 0; i < 5; i++)
+                    if (Math.random() < build) {
+                        g.globalAlpha = .3;
+                        g.fillStyle = c[i % 3];
+                        g.fillRect(Math.random() * W * .5, Math.random() * H, Math.random() * W * .7, 3 + Math.random() * 12);
+                    }
+            }
+            if (st.tun === 'grid') {
+                g.strokeStyle = c[0];
+                g.lineWidth = 1;
+                const hz = cy;
+                for (let i = 0; i < 14; i++) {
+                    const s = ((i + ph * 2) % 14) / 14;
+                    const y = hz + s * s * (H - hz);
+                    g.globalAlpha = s * .5;
+                    g.beginPath();
+                    g.moveTo(0, y);
+                    g.lineTo(W, y);
+                    g.stroke();
+                }
+                for (let i = -8; i <= 8; i++) {
+                    g.globalAlpha = .3;
+                    g.beginPath();
+                    g.moveTo(cx + i * 8, hz);
+                    g.lineTo(cx + i * W * .18, H);
+                    g.stroke();
+                }
+            }
+            if (st.tun === 'spiral') {
+                g.strokeStyle = c[1];
+                g.lineWidth = 2;
+                for (let A = 0; A < 4; A++) {
+                    g.globalAlpha = .4 * (.3 + build * .7);
+                    g.beginPath();
+                    for (let i = 0; i <= 80; i++) {
+                        const f = i / 80;
+                        const a = A * 1.5708 + f * 7 + t * (.6 + build * 3);
+                        const r = f * f * m * .75;
+                        i ? g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r) : g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+                    }
+                    g.stroke();
+                }
+            }
+            if (st.tun === 'stars') {
+                g.strokeStyle = c[1];
+                for (let i = 0; i < 90; i++) {
+                    const a = PS[i].a;
+                    const s = (PS[i].r * 3 + ph * .6) % 1;
+                    const r = s * s * m * .8;
+                    const l = s * 40 * (1 + build * 3);
+                    g.globalAlpha = s;
+                    g.lineWidth = 1 + s * 2;
+                    g.beginPath();
+                    g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+                    g.lineTo(cx + Math.cos(a) * (r + l), cy + Math.sin(a) * (r + l));
+                    g.stroke();
+                }
+            }
+            if (st.tun === 'rain') {
+                for (let i = 0; i < 40; i++) {
+                    const s = (PS[i].r * 5 + ph * .5 * PS[i].s) % 1;
+                    g.globalAlpha = .5 * (1 - s);
+                    g.fillStyle = c[i % 2];
+                    g.fillRect((i + .5) / 40 * W, s * H * 1.2 - 40, 2, 30 + PS[i].z * 20);
+                }
+            }
+            if (st.tun === 'beams') {
+                for (let i = 0; i < 8; i++) {
+                    const a = i * .785 + t * (.3 + build);
+                    g.globalAlpha = .1 + .15 * build;
+                    g.fillStyle = c[i % 2];
+                    g.beginPath();
+                    g.moveTo(cx, cy);
+                    g.arc(cx, cy, m, a, a + .2);
+                    g.closePath();
+                    g.fill();
+                }
+            }
+            if (st.tun === 'ripple') {
+                for (let i = 0; i < 8; i++) {
+                    const s = ((i + ph * 1.5) % 8) / 8;
+                    g.globalAlpha = (1 - s) * .5;
+                    g.strokeStyle = c[i % 2];
+                    g.lineWidth = 2 + s * 6;
+                    g.beginPath();
+                    g.arc(cx, cy, s * m * .7, 0, 6.283);
+                    g.stroke();
+                }
+            }
+            // efek megah: sinar cahaya berputar, cincin energi memancar, percikan naik
+            if (name) {
+                const pw = after ? Math.max(0, 1 - sm(0, .8, k)) * .6 + .4 : build;
+                for (let i = 0; i < 14; i++) {
+                    const a = i * (6.2832 / 14) + t * .15;
+                    g.globalAlpha = (.04 + .1 * pw) * (i % 2 ? 1 : .6);
+                    g.fillStyle = c[i % 2];
+                    g.beginPath();
+                    g.moveTo(cx, cy);
+                    g.arc(cx, cy, m * .9, a, a + .11);
+                    g.closePath();
+                    g.fill();
+                }
+                const rate = .7 + pw * 2.3;
+                g.strokeStyle = c[1];
+                for (let i = 0; i < 5; i++) {
+                    const s2 = (t * rate + i / 5) % 1;
+                    g.globalAlpha = (1 - s2) * (.12 + .4 * pw);
+                    g.lineWidth = 1.5 + s2 * 5;
+                    g.beginPath();
+                    g.arc(cx, cy, s2 * m * .6, 0, 6.2832);
+                    g.stroke();
+                }
+                g.fillStyle = c[1];
+                for (const q of EM) {
+                    const yy = H * 1.05 - ((t * q.v * (.15 + pw * .85) + q.o) % 1) * H * 1.1;
+                    const xx = q.x * W + Math.sin(t * q.w + q.o * 9) * 14;
+                    g.globalAlpha = (.25 + .6 * pw) * q.a;
+                    g.fillRect(xx, yy, q.z, q.z * 2.2);
+                }
+            }
+            // glow core
+            g.globalAlpha = 1;
+            if (name) {
+                const gr = g.createRadialGradient(cx, cy, 0, cx, cy, m * (.1 + build * .5));
+                gr.addColorStop(0, c[1] + 'cc');
+                gr.addColorStop(1, '#0000');
+                g.fillStyle = gr;
+                g.globalAlpha = .15 + build * .55;
+                g.fillRect(0, 0, W, H);
+            }
+            // particles
+            if (name) {
+                g.fillStyle = c[1];
+                for (const q of PS) {
+                    const r = after ? 4 + k * q.s * m * 1.1 : q.r * m * .6 * Math.pow(1 - build, 1.6) + 4;
+                    const a = q.a + (1 - build) * q.s * 2;
+                    g.globalAlpha = after ? Math.max(0, 1 - k * 1.3) : .3 + build * .7;
+                    g.beginPath();
+                    g.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, q.z * (after ? 1 + k * 2 : 1), 0, 6.283);
+                    g.fill();
+                }
+            }
+            // motif dari video (rol film, jam, orbit, mesin jam, taman)
+            if (name)
+                drawMotif(st.mo, t, build, after, k, cx, cy, m, c);
+            // waveform
+            const amp = (name ? (after ? .22 + .78 * (1 - sm(0, .5, k)) : .05 + .95 * Math.pow(build, 1.4)) : .04 + .015 * Math.sin(t * 3)) * H * .4;
+            const w = W * (name ? (after ? 1 : .55 + .45 * build) : .7);
+            const wp = t * (4 + build * 10);
+            (st.wv === 0 ? [[1, 0, .28, 2.5]] : []).forEach(([sc, ci, al, lw], i) => {
+                wavePath(cx, cy, w, amp * sc, wp, i * 1.3);
+                g.globalAlpha = al * .7;
+                g.fillStyle = c[ci % 3];
+                g.fill();
+                g.globalAlpha = .95;
+                g.strokeStyle = c[ci % 3];
+                g.lineWidth = lw;
+                g.shadowBlur = 18;
+                g.shadowColor = c[0];
+                g.stroke();
+                g.shadowBlur = 0;
+            });
+            if (st.wv > 0) {
+                const sp = (u, o) => Math.abs(Math.sin(u * 37 + o + wp) * Math.sin(u * 13.7 - wp * .6 + o) + .5 * Math.sin(u * 71 + wp * 1.7));
+                const ev = u => Math.pow(1 - Math.abs(u), 1.5);
+                g.shadowBlur = 16;
+                g.shadowColor = c[0];
+                g.lineWidth = 2;
+                g.strokeStyle = c[1];
+                g.fillStyle = c[0];
+                g.globalAlpha = .95;
+                if (st.wv === 1) {
+                    const N = Math.max(16, W / 14 | 0);
+                    const bw = w / N;
+                    for (let k = 0; k < 2; k++) {
+                        g.fillStyle = k ? c[0] : c[1];
+                        g.beginPath();
+                        for (let i = k; i < N; i += 2) {
+                            const u = i / (N - 1) * 2 - 1;
+                            const h = amp * ev(u) * (.15 + .85 * Math.min(1, sp(u, 0))) + 3;
+                            g.rect(cx + u * w / 2 - bw * .35, cy - h, bw * .7, h * 2);
+                        }
+                        g.fill();
+                    }
+                }
+                else if (st.wv === 2) {
+                    const R = Math.min(W, H) * (.17 + .06 * build);
+                    g.beginPath();
+                    for (let i = 0; i <= 200; i++) {
+                        const a = i / 200 * 6.2832;
+                        const r = R + amp * .6 * Math.min(1, sp(Math.cos(a), 1));
+                        i ? g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r) : g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+                    }
+                    g.closePath();
+                    g.stroke();
+                    g.globalAlpha = .3;
+                    g.fill();
+                }
+                else if (st.wv === 3) {
+                    for (let L = 0; L < 1; L++) {
+                        g.beginPath();
+                        g.strokeStyle = c[L % 3];
+                        g.globalAlpha = .9 - L * .2;
+                        for (let i = 0; i <= 160; i++) {
+                            const u = i / 80 - 1;
+                            const y = Math.sin(u * (14 + L * 5) + wp * (1 + L * .3)) * amp * .8 * ev(u) * (.3 + .7 * Math.min(1, sp(u, L)));
+                            i ? g.lineTo(cx + u * w / 2, cy + y) : g.moveTo(cx + u * w / 2, cy + y);
+                        }
+                        g.stroke();
+                    }
+                }
+                else if (st.wv === 4) {
+                    for (let L = 0; L < 1; L++) {
+                        g.beginPath();
+                        g.strokeStyle = c[L];
+                        for (let i = 0; i <= 120; i++) {
+                            const u = i / 60 - 1;
+                            const y = Math.sin(u * 9 + wp * .5 + L * 3.14) * amp * .7 * ev(u);
+                            i ? g.lineTo(cx + u * w / 2, cy + y) : g.moveTo(cx + u * w / 2, cy + y);
+                        }
+                        g.stroke();
+                    }
+                    g.globalAlpha = .5;
+                    g.strokeStyle = c[2];
+                    g.beginPath();
+                    for (let i = 0; i <= 40; i++) {
+                        const u = i / 20 - 1;
+                        const y = Math.sin(u * 9 + wp * .5) * amp * .7 * ev(u);
+                        g.moveTo(cx + u * w / 2, cy + y);
+                        g.lineTo(cx + u * w / 2, cy - y);
+                    }
+                    g.stroke();
+                }
+                else if (st.wv === 5) {
+                    for (let L = 0; L < 1; L++) {
+                        const d = L % 2 ? 1 : -1;
+                        g.beginPath();
+                        g.fillStyle = c[L % 2];
+                        g.globalAlpha = .16;
+                        for (let i = 0; i <= 100; i++) {
+                            const u = i / 50 - 1;
+                            const y = Math.sin(u * (5 + L) + wp * .4 * d) * amp * .6 * ev(u) * (.4 + .6 * Math.min(1, sp(u, L * 2)));
+                            i ? g.lineTo(cx + u * w / 2, cy + y) : g.moveTo(cx + u * w / 2, cy + y);
+                        }
+                        for (let i = 100; i >= 0; i--) {
+                            const u = i / 50 - 1;
+                            g.lineTo(cx + u * w / 2, cy - Math.sin(u * (5 + L) + wp * .4 * d) * amp * .3 * ev(u));
+                        }
+                        g.closePath();
+                        g.fill();
+                        g.globalAlpha = .8;
+                        g.stroke();
+                    }
+                }
+                else if (st.wv === 6) {
+                    const N = Math.max(16, W / 16 | 0);
+                    const bw = w / N;
+                    const by = cy + amp * .5;
+                    for (let k = 0; k < 2; k++) {
+                        g.fillStyle = c[k];
+                        g.beginPath();
+                        for (let i = k; i < N; i += 2) {
+                            const u = i / (N - 1) * 2 - 1;
+                            const h = amp * 1.1 * ev(u) * (.1 + .9 * Math.min(1, sp(u, 3))) + 2;
+                            g.rect(cx + u * w / 2 - bw * .4, by - h, bw * .8, h);
+                        }
+                        g.fill();
+                    }
+                }
+                else if (st.wv === 7) {
+                    g.fillStyle = c[1];
+                    g.beginPath();
+                    for (let i = 0; i <= 70; i++) {
+                        const u = i / 35 - 1;
+                        const y = Math.sin(u * 20 + wp) * amp * .7 * ev(u) * Math.min(1, sp(u, 2));
+                        const r = 2 + ev(u) * 5;
+                        const x = cx + u * w / 2;
+                        g.moveTo(x + r, cy + y);
+                        g.arc(x, cy + y, r, 0, 6.283);
+                    }
+                    g.fill();
+                }
+                else if (st.wv === 8) {
+                    g.lineWidth = 3;
+                    g.beginPath();
+                    for (let i = 0; i <= 60; i++) {
+                        const u = i / 30 - 1;
+                        const y = (i % 2 ? 1 : -1) * amp * ev(u) * (.2 + .8 * Math.min(1, sp(u, 5)));
+                        i ? g.lineTo(cx + u * w / 2, cy + y) : g.moveTo(cx + u * w / 2, cy + y);
+                    }
+                    g.stroke();
+                }
+                else if (st.wv === 9) {
+                    const R = Math.min(W, H) * .15;
+                    g.lineWidth = 4;
+                    for (let k = 0; k < 2; k++) {
+                        g.strokeStyle = c[k];
+                        g.beginPath();
+                        for (let i = k; i < 72; i += 2) {
+                            const a = i / 72 * 6.2832;
+                            const l = amp * .7 * Math.min(1, sp(Math.cos(a), 2)) + 4;
+                            g.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+                            g.lineTo(cx + Math.cos(a) * (R + l), cy + Math.sin(a) * (R + l));
+                        }
+                        g.stroke();
+                    }
+                }
+                else if (st.wv === 10) {
+                    for (let L = 0; L < 1; L++) {
+                        g.beginPath();
+                        g.strokeStyle = c[L % 2];
+                        g.globalAlpha = .9 - L * .08;
+                        for (let i = 0; i <= 120; i++) {
+                            const u = i / 60 - 1;
+                            const y = -Math.min(1, sp(u, L)) * amp * .35 * ev(u);
+                            i ? g.lineTo(cx + u * w / 2, cy + y) : g.moveTo(cx + u * w / 2, cy + y);
+                        }
+                        g.stroke();
+                    }
+                }
+                else if (st.wv === 11) {
+                    const N = 30;
+                    const bw = w / N;
+                    for (let k = 0; k < 2; k++) {
+                        g.fillStyle = c[k];
+                        g.beginPath();
+                        for (let i = k; i < N; i += 2) {
+                            const u = i / (N - 1) * 2 - 1;
+                            const x = cx + u * w / 2;
+                            const h = amp * ev(u) * (.15 + .85 * Math.min(1, sp(u, 4))) + 3;
+                            g.moveTo(x - bw / 2, cy + h);
+                            g.lineTo(x, cy - h);
+                            g.lineTo(x + bw / 2, cy + h);
+                            g.closePath();
+                        }
+                        g.fill();
+                    }
+                }
+                else if (st.wv === 12) {                          // petir: garis bergerigi + cabang kilat
+                    g.lineWidth = 2.5;
+                    g.strokeStyle = '#fff';
+                    g.shadowColor = c[0];
+                    g.shadowBlur = 22;
+                    const N = 70, fl = Math.floor(t * 14), nz = i => { const v = Math.sin(i * 12.9898 + fl * 78.233) * 43758.5453; return v - Math.floor(v); };
+                    for (let sd = -1; sd <= 1; sd += 2) {
+                        g.beginPath();
+                        for (let i = 0; i <= N; i++) {
+                            const u = i / N * 2 - 1, y = sd * amp * ev(u) * (.15 + .85 * Math.min(1, sp(u, 1))) * (.7 + .6 * nz(i));
+                            i ? g.lineTo(cx + u * w / 2, cy + y) : g.moveTo(cx + u * w / 2, cy + y);
+                        }
+                        g.stroke();
+                    }
+                    g.lineWidth = 1.5;
+                    g.strokeStyle = c[1];
+                    g.beginPath();
+                    for (let j = 0; j < 9; j++) {
+                        const u = (nz(j + 50) * 2 - 1) * .8;
+                        let x = cx + u * w / 2, y = cy - amp * ev(u) * .8;
+                        g.moveTo(x, y);
+                        for (let s2 = 0; s2 < 5; s2++) {
+                            x += (nz(j * 7 + s2) - .5) * amp * .18;
+                            y -= amp * .08 * (1 + nz(j + s2 + 9));
+                            g.lineTo(x, y);
+                        }
+                    }
+                    g.stroke();
+                }
+                else if (st.wv === 13) {                          // mosaik piksel: kotak-kotak bersusun
+                    const cs = Math.max(8, W / 40), cols = Math.floor(w / cs);
+                    for (let k2 = 0; k2 < 2; k2++) {
+                        g.fillStyle = c[k2];
+                        g.beginPath();
+                        for (let i = 0; i < cols; i++) {
+                            const u = i / (cols - 1) * 2 - 1, h = amp * ev(u) * (.15 + .85 * Math.min(1, sp(u, 2))) + cs, rows = Math.max(1, Math.round(h / cs)), x = cx - w / 2 + i * cs;
+                            for (let r = 0; r < rows; r++) {
+                                if (((i + r) & 1) !== k2)
+                                    continue;
+                                g.rect(x + 1, cy - (r + 1) * cs + 1, cs - 2, cs - 2);
+                                g.rect(x + 1, cy + r * cs + 1, cs - 2, cs - 2);
+                            }
+                        }
+                        g.fill();
+                    }
+                }
+                else if (st.wv === 14) {                          // kristal: sisi-sisi bersudut terang dan gelap
+                    const N = 48, pts = [];
+                    for (let i = 0; i <= N; i++) {
+                        const u = i / N * 2 - 1;
+                        pts.push([cx + u * w / 2, amp * ev(u) * (.15 + .85 * Math.min(1, sp(u, 3))) + 2]);
+                    }
+                    for (let k2 = 0; k2 < 2; k2++) {
+                        g.fillStyle = k2 ? c[0] : c[1];
+                        g.globalAlpha = k2 ? .35 : .6;
+                        g.beginPath();
+                        for (let i = k2; i < N; i += 2) {
+                            const a = pts[i], b = pts[i + 1];
+                            g.moveTo(a[0], cy - a[1]); g.lineTo(b[0], cy - b[1]); g.lineTo(b[0], cy + b[1]); g.lineTo(a[0], cy + a[1]); g.closePath();
+                        }
+                        g.fill();
+                    }
+                    g.globalAlpha = .95;
+                    g.strokeStyle = '#fff';
+                    g.lineWidth = 2;
+                    g.beginPath();
+                    pts.forEach((p2, i) => { i ? g.lineTo(p2[0], cy - p2[1]) : g.moveTo(p2[0], cy - p2[1]); });
+                    pts.forEach((p2, i) => { i ? g.lineTo(p2[0], cy + p2[1]) : g.moveTo(p2[0], cy + p2[1]); });
+                    pts.forEach(p2 => { g.moveTo(p2[0], cy - p2[1]); g.lineTo(p2[0], cy + p2[1]); });
+                    g.stroke();
+                }
+                g.shadowBlur = 0;
+            }
+            // burst
+            if (after && k < .7) {
+                const rr = m * (.1 + sm(0, .35, k) * .9) * (1 - sm(.2, .65, k) * .8);
+                g.globalAlpha = Math.max(0, 1 - k / .45) * .9;
+                g.fillStyle = '#fff';
+                g.fillRect(-20, -20, W + 40, H + 40);
+                g.globalAlpha = Math.max(0, 1 - sm(.1, .65, k));
+                if (st.bt === 0) {
+                    g.fillStyle = c[0];
+                    star(cx, cy, rr * 1.3, Math.PI / 4 + k);
+                    g.fill();
+                    g.fillStyle = '#fff';
+                    star(cx, cy, rr, 0);
+                    g.fill();
+                }
+                else if (st.bt === 1) {
+                    g.strokeStyle = c[0];
+                    g.lineWidth = 8;
+                    for (let j = 0; j < 3; j++) {
+                        g.beginPath();
+                        g.arc(cx, cy, rr * (1 + j * .35), 0, 6.283);
+                        g.stroke();
+                    }
+                }
+                else if (st.bt === 2) {
+                    g.fillStyle = c[0];
+                    g.fillRect(cx - rr * .3, 0, rr * .6, H);
+                    g.fillStyle = '#fff';
+                    g.fillRect(cx - rr * .12, 0, rr * .24, H);
+                }
+                else if (st.bt === 3) {
+                    g.lineWidth = 14;
+                    for (let j = 0; j < 24; j++) {
+                        const a = j / 24 * 6.2832 + k;
+                        g.strokeStyle = j % 2 ? c[0] : '#fff';
+                        g.beginPath();
+                        g.moveTo(cx, cy);
+                        g.lineTo(cx + Math.cos(a) * rr * 1.6, cy + Math.sin(a) * rr * 1.6);
+                        g.stroke();
+                    }
+                }
+                else if (st.bt === 4) {
+                    g.strokeStyle = c[0];
+                    g.lineWidth = 10;
+                    for (let j = 0; j < 3; j++) {
+                        g.save();
+                        g.translate(cx, cy);
+                        g.rotate(k * 2 + j * .3);
+                        const s = rr * (1 + j * .3);
+                        g.strokeRect(-s / 2, -s / 2, s, s);
+                        g.restore();
+                    }
+                }
+                else if (st.bt === 5) {
+                    g.fillStyle = c[0];
+                    g.fillRect(0, cy - rr * .15, W, rr * .3);
+                    g.fillStyle = '#fff';
+                    g.fillRect(0, cy - rr * .05, W, rr * .1);
+                }
+                else if (st.bt === 6) {
+                    g.fillStyle = '#fff';
+                    g.beginPath();
+                    g.arc(cx, cy, rr * .35, 0, 6.283);
+                    g.fill();
+                    g.fillStyle = c[0];
+                    g.fillRect(cx - rr * .06, cy - rr * 1.4, rr * .12, rr * 2.8);
+                    g.fillRect(cx - rr * 1.4, cy - rr * .06, rr * 2.8, rr * .12);
+                }
+                else if (st.bt === 7) {
+                    g.fillStyle = c[0];
+                    for (let j = 0; j < 20; j++) {
+                        const l = LN[j];
+                        const a = l.a;
+                        const d = rr * (.4 + l.l);
+                        g.beginPath();
+                        g.moveTo(cx + Math.cos(a) * d, cy + Math.sin(a) * d);
+                        g.lineTo(cx + Math.cos(a + .15) * d * .7, cy + Math.sin(a + .15) * d * .7);
+                        g.lineTo(cx + Math.cos(a - .15) * d * .7, cy + Math.sin(a - .15) * d * .7);
+                        g.closePath();
+                        g.fill();
+                    }
+                }
+                else if (st.bt === 8) {
+                    g.strokeStyle = c[1];
+                    g.lineWidth = 8;
+                    for (let j = 0; j < 3; j++) {
+                        g.save();
+                        g.translate(cx, cy);
+                        g.rotate(j * .5 + k);
+                        poly(6, rr * (.7 + j * .3));
+                        g.restore();
+                    }
+                }
+                else if (st.bt === 9) {
+                    g.lineWidth = rr * .12;
+                    g.lineCap = 'round';
+                    for (const sg of [1, -1]) {
+                        g.strokeStyle = sg > 0 ? c[0] : '#fff';
+                        g.beginPath();
+                        g.moveTo(cx - rr * 1.6, cy - sg * rr * 1.6);
+                        g.lineTo(cx + rr * 1.6, cy + sg * rr * 1.6);
+                        g.stroke();
+                    }
+                    g.lineCap = 'butt';
+                }
+                else if (st.bt === 10) {
+                    g.fillStyle = '#fff';
+                    for (const l of LN) {
+                        const d = rr * l.l * 1.8;
+                        g.beginPath();
+                        g.arc(cx + Math.cos(l.a) * d, cy + Math.sin(l.a) * d, 3 + l.l * 6, 0, 6.283);
+                        g.fill();
+                    }
+                }
+                else {
+                    g.strokeStyle = c[0];
+                    g.lineWidth = 6;
+                    for (let A = 0; A < 3; A++) {
+                        g.beginPath();
+                        for (let i = 0; i <= 40; i++) {
+                            const f = i / 40;
+                            const a = A * 2.094 + f * 5 + k * 6;
+                            const r = f * rr * 1.6;
+                            i ? g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r) : g.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+                        }
+                        g.stroke();
+                    }
+                }
+                for (let j = 0; j < 4; j++) {
+                    const kk = k - j * .05;
+                    if (kk <= 0)
+                        continue;
+                    g.globalAlpha = Math.max(0, 1 - kk * 1.6);
+                    g.strokeStyle = j % 2 ? c[0] : '#fff';
+                    g.lineWidth = 12 - j * 2.5;
+                    g.beginPath();
+                    g.arc(cx, cy, m * (.05 + sm(0, 1, kk * 1.3) * .85), 0, 6.2832);
+                    g.stroke();
+                }
+                g.strokeStyle = '#fff';
+                for (let j = 0; j < 60; j++) {
+                    const q = PS[j], rr2 = (.1 + q.r * .9) * m * sm(0, .9, k * 1.4), len = 14 + q.s * 40;
+                    g.globalAlpha = Math.max(0, 1 - k * 1.5);
+                    g.lineWidth = 1 + q.z * .5;
+                    g.beginPath();
+                    g.moveTo(cx + Math.cos(q.a) * rr2, cy + Math.sin(q.a) * rr2);
+                    g.lineTo(cx + Math.cos(q.a) * (rr2 + len), cy + Math.sin(q.a) * (rr2 + len));
+                    g.stroke();
+                }
+                {
+                    const fh = 10 * (1 - sm(0, .6, k)) + 1, fg = g.createLinearGradient(0, 0, W, 0);
+                    fg.addColorStop(0, '#0000');
+                    fg.addColorStop(.5, '#fff');
+                    fg.addColorStop(1, '#0000');
+                    g.globalAlpha = Math.max(0, 1 - k * 1.2);
+                    g.fillStyle = fg;
+                    g.fillRect(0, cy - fh / 2, W, fh);
+                }
+                g.strokeStyle = c[1];
+                g.lineWidth = 2;
+                for (const l of LN) {
+                    g.beginPath();
+                    g.moveTo(cx + Math.cos(l.a) * rr * .15, cy + Math.sin(l.a) * rr * .15);
+                    g.lineTo(cx + Math.cos(l.a) * rr * l.l * 1.4, cy + Math.sin(l.a) * rr * l.l * 1.4);
+                    g.stroke();
+                }
+            }
+            g.restore();
+            if (name && t < .6) {
+                g.globalAlpha = 1 - sm(0, .6, t);
+                g.fillStyle = '#000';
+                g.fillRect(0, 0, W, H);
+                g.globalAlpha = 1;
+            }
+            // text
+            g.save();
+            g.textAlign = 'center';
+            g.textBaseline = 'middle';
+            g.globalAlpha = 1;
+            if (!name) {
+                g.font = '700 ' + Math.min(22, W * .05) + 'px system-ui';
+                g.fillStyle = '#ffffffaa';
+                g.fillText('TEKAN GACHA', cx, cy + H * .2);
+            }
+            else if (k > .18) {
+                const q = sm(.18, .55, k), cl = x => Math.min(1, Math.max(0, x));
+                let fs = Math.min(W * .14, H * .12, 90);
+                g.font = '800 ' + fs + 'px system-ui,sans-serif';
+                while (g.measureText(name).width > W * .9 && fs > 14) {
+                    fs -= 2;
+                    g.font = '800 ' + fs + 'px system-ui,sans-serif';
+                }
+                const ty = anim && anim.members ? H * .26 : cy + H * .02, tw = g.measureText(name).width, pulse = .5 + .5 * Math.sin(t * 2.4);
+                // lingkaran cahaya dan sinar matahari berputar di belakang nama
+                g.save();
+                g.globalCompositeOperation = 'lighter';
+                const hr = Math.max(tw * .7, m * .25), hg = g.createRadialGradient(cx, ty, 0, cx, ty, hr);
+                hg.addColorStop(0, c[1] + 'aa');
+                hg.addColorStop(.5, c[0] + '33');
+                hg.addColorStop(1, '#0000');
+                g.globalAlpha = q * (.55 + .2 * pulse);
+                g.fillStyle = hg;
+                g.fillRect(cx - hr, ty - hr, hr * 2, hr * 2);
+                for (let i = 0; i < 20; i++) {
+                    const a2 = i * 6.2832 / 20 + t * .12;
+                    g.globalAlpha = q * .13 * (i % 2 ? 1 : .6);
+                    g.fillStyle = c[i % 2];
+                    g.beginPath();
+                    g.moveTo(cx, ty);
+                    g.arc(cx, ty, m * .7, a2, a2 + .09);
+                    g.closePath();
+                    g.fill();
+                }
+                // kilau berkelip di sekitar nama
+                g.fillStyle = '#fff';
+                for (const sp of SPK) {
+                    const tw2 = .5 + .5 * Math.sin(t * 3 + sp.ph);
+                    g.globalAlpha = q * tw2;
+                    star(cx + sp.ax * (tw + 90), ty + sp.ay * fs * 1.5, sp.sz * tw2, Math.PI / 4);
+                    g.fill();
+                }
+                g.restore();
+                // garis cahaya memanjang dari tengah di bawah nama
+                const ll = (tw / 2 + 30) * sm(.25, .6, k), ly = ty + fs * .62;
+                g.globalAlpha = q;
+                g.strokeStyle = c[1];
+                g.lineWidth = 2;
+                g.beginPath();
+                g.moveTo(cx - ll, ly);
+                g.lineTo(cx + ll, ly);
+                g.stroke();
+                g.fillStyle = c[0];
+                for (const sg of [-1, 1]) {
+                    star(cx + sg * ll, ly, 7, Math.PI / 4);
+                    g.fill();
+                }
+                // bayangan cahaya di belakang huruf (satu kali saja supaya ringan)
+                g.font = '800 ' + fs + 'px system-ui,sans-serif';
+                g.globalAlpha = q * .85;
+                g.fillStyle = '#fff';
+                g.shadowColor = c[0];
+                g.shadowBlur = 36;
+                g.fillText(name, cx, ty);
+                g.shadowBlur = 0;
+                // nama muncul huruf demi huruf (masuk dari besar ke normal), dengan tepi warna
+                const chars = [...name], d = Math.min(.03, .22 / Math.max(1, chars.length)), widths = chars.map(ch => g.measureText(ch).width);
+                const total = widths.reduce((u, v) => u + v, 0), sw = (t * .45) % 1.6 - .3;
+                let x0 = cx - total / 2;
+                for (let j = 0; j < chars.length; j++) {
+                    const qj = sm(.18 + d * j, .18 + d * j + .2, k), xj = x0 + widths[j] / 2, o = (1 - qj) * 14 + (k < .9 ? Math.random() * 2 : 0);
+                    x0 += widths[j];
+                    g.save();
+                    g.translate(xj, ty);
+                    g.scale(1 + (1 - qj) * 1.2, 1 + (1 - qj) * 1.2);
+                    g.globalAlpha = qj;
+                    g.globalCompositeOperation = 'lighter';
+                    g.fillStyle = c[0];
+                    g.fillText(chars[j], -o, 0);
+                    g.fillStyle = c[1];
+                    g.fillText(chars[j], o, 0);
+                    g.globalCompositeOperation = 'source-over';
+                    g.fillStyle = '#fff';
+                    g.fillText(chars[j], 0, 0);
+                    if (k > .6) {
+                        const sg = g.createLinearGradient(cx - tw / 2 - xj, -fs, cx + tw / 2 - xj, fs);
+                        sg.addColorStop(cl(sw - .12), '#fff0');
+                        sg.addColorStop(cl(sw), c[1]);
+                        sg.addColorStop(cl(sw + .12), '#fff0');
+                        g.globalAlpha = qj * sm(.6, .75, k) * .9;
+                        g.fillStyle = sg;
+                        g.fillText(chars[j], 0, 0);
+                    }
+                    g.restore();
+                }
+                // tulisan KELOMPOK dengan jarak huruf yang menyempit
+                g.font = '700 ' + Math.max(12, fs * .24) + 'px system-ui';
+                g.fillStyle = c[1];
+                g.globalAlpha = sm(.3, .6, k);
+                try { g.letterSpacing = (fs * .2 * (1 + 2 * (1 - sm(.3, .8, k)))) + 'px'; } catch (e) { }
+                g.fillText(anim && anim.members ? anim.members.length + ' ANGGOTA' : 'KELOMPOK ' + (anim ? anim.g + 1 : ''), cx, ty - fs * .85);
+                try { g.letterSpacing = '0px'; } catch (e) { }
+                if (anim && anim.members) {                       // daftar anggota kelompok, muncul satu per satu di bawah gelombang
+                    const ms = anim.members, cols = ms.length > 7 ? 2 : 1, rows = Math.ceil(ms.length / cols), y0 = cy + H * .14, colW = Math.min(W * .42, 190);
+                    const fm = Math.max(9, Math.min(Math.min(W * (cols > 1 ? .05 : .06), 24), (H * .9 - y0) / (rows * 1.55))), lh = fm * 1.55;
+                    g.font = '700 ' + fm + 'px system-ui,sans-serif';
+                    g.textAlign = 'center';
+                    ms.forEach((nm, idx) => {
+                        const col = cols > 1 ? idx % cols : 0, row = cols > 1 ? Math.floor(idx / cols) : idx;
+                        const qi = sm(.42 + idx * .03, .58 + idx * .03, k), x = cx + (col - (cols - 1) / 2) * colW, y = y0 + row * lh + (1 - qi) * 18;
+                        g.globalAlpha = qi;
+                        g.fillStyle = idx % 2 ? c[1] : '#fff';
+                        g.shadowColor = c[0];
+                        g.shadowBlur = 12;
+                        g.fillText(nm, x, y, colW * .95);
+                        g.shadowBlur = 0;
+                    });
+                }
+            }
+            g.restore();
+        }
+        function loop(ts) {
+            if (anim) {
+                const t = Math.max(0, (ts - anim.s) / 1000);
+                try {
+                    render(t, anim.st, anim.name);
+                }
+                catch (e) {
+                }
+                const f = (t - T - 2.5) / 1.6;
+                if (f > 0) {
+                    fading = true;
+                    cv.style.opacity = Math.max(0, 1 - f);
+                }
+                if (!anim.done && f >= 1) {
+                    const cb = anim.cb;
+                    anim = null;
+                    cv.style.display = 'none';
+                    cv.style.opacity = 1;
+                    if (cb)
+                        cb();
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+        function play(name, grp, cb, members) {
+            if (!deck.length)
+                deck = [...S.keys()].sort(() => Math.random() - .5);
+            const si = deck.pop();
+            rs();
+            cv.style.opacity = 1;
+            fading = false;
+            anim = { s: performance.now(), st: S[si], name, g: grp, done: false, cb, members };
+        }
+        function stop() {
+            anim = null;
+            fading = false;
+            cv.style.opacity = 1;
+        }
+        function skip() {
+            if (!anim)
+                return;
+            const t = (performance.now() - anim.s) / 1000;
+            const a = 4.7;
+            const b = T + 2.5;
+            if (t < a) {
+                anim.s = performance.now() - a * 1000;
+                return 1;
+            }
+            if (t < b) {
+                anim.s = performance.now() - b * 1000;
+                return 2;
+            }
+            return 0;
+        }
+        requestAnimationFrame(loop);
+        return { play, stop, skip, covered: () => !!anim && !fading };
+    })();
+
+
+    // ==================== Efek suara ====================
+    // File audio ada di folder "suara" di samping halaman ini (mp3 atau mp4, boleh diganti sesuka hati, pakai nama yang sama):
+    //   galaksi-zoom        -> selama galaksi zoom
+    //   dentuman-flash      -> dentuman saat flash (opsional)
+    //   gelombang-suara-1   -> animasi gelombang suara (opsional: -2, -3, -4; kalau ada beberapa, dipilih acak)
+    //   nama-muncul         -> saat nama muncul
+    // Kalau file suatu bagian tidak ada, dipakai suara buatan (disintesis) sebagai cadangan.
+    const SFX = (() => {
+        const BEAT = 60 / 108;
+        let ctx = null, master, revIn, noiseBuf, muted = false;
+        let buses = [], bbus = null, gbus = null, rbus = null;
+        try { muted = localStorage.getItem('gm') === '1'; } catch (e) { }
+
+        // ---- file audio dari folder "suara" ----
+        const DIR = 'suara/', EXT = ['mp3', 'mp4', 'm4a', 'wav', 'ogg'];
+        const SLOTS = {
+            zoom: ['galaksi-zoom'],
+            flash: ['dentuman-flash'],
+            gel: ['gelombang-suara-1', 'gelombang-suara-2', 'gelombang-suara-3', 'gelombang-suara-4'],
+            grup: ['lagu-kelompok-1', 'lagu-kelompok-2', 'lagu-kelompok-3', 'lagu-kelompok-4'],
+            nama: ['nama-muncul']
+        };
+        const files = { zoom: [], flash: [], gel: [], grup: [], nama: [] };
+        let unlocked = false;
+        function probe(slot, base) {                  // coba .mp3 dulu, lalu .mp4, dst.
+            let i = 0;
+            const next = () => {
+                if (i >= EXT.length) return;
+                const a = new Audio();
+                a.preload = 'auto';
+                a.onloadedmetadata = () => files[slot].push({ el: a, v: 0, timers: [], fx: 0 });
+                a.onerror = next;
+                a.src = DIR + base + '.' + EXT[i++];
+            };
+            next();
+        }
+        Object.keys(SLOTS).forEach(s => SLOTS[s].forEach(n => probe(s, n)));
+        const pick = s => files[s].length ? files[s][Math.floor(Math.random() * files[s].length)] : null;
+        const allFiles = () => [].concat(files.zoom, files.flash, files.gel, files.grup, files.nama);
+        function setVol(f, v) { f.v = v; f.el.volume = muted ? 0 : Math.min(1, Math.max(0, v)); }
+        function clearT(f) { f.timers.forEach(clearTimeout); f.timers = []; clearInterval(f.fx); }
+        function fadeTo(f, to, secs) {
+            clearInterval(f.fx);
+            const from = f.v, t0 = performance.now();
+            f.fx = setInterval(() => {
+                const u = Math.min(1, (performance.now() - t0) / (secs * 1000));
+                setVol(f, from + (to - from) * u);
+                if (u >= 1) { clearInterval(f.fx); if (to === 0) f.el.pause(); }
+            }, 40);
+        }
+        // o: delay (dtk), offset (mulai dari detik ke berapa di file), vol, fadeIn, fadeOutAt + total (mulai meredup di detik fadeOutAt file, hening di detik total)
+        function playFile(f, o) {
+            clearT(f);
+            f.el.pause();
+            const delay = o.delay || 0, off = o.offset || 0, v = o.vol == null ? 1 : o.vol;
+            const go = () => {
+                try { f.el.currentTime = off; } catch (e) { }
+                setVol(f, o.fadeIn ? 0 : v);
+                const p = f.el.play();
+                if (p && p.catch) p.catch(() => { });
+                if (o.fadeIn) fadeTo(f, v, o.fadeIn);
+                if (o.fadeOutAt != null) f.timers.push(setTimeout(() => fadeTo(f, 0, Math.max(.05, o.total - o.fadeOutAt)), Math.max(0, o.fadeOutAt - off) * 1000));
+            };
+            if (delay > 0) f.timers.push(setTimeout(go, delay * 1000)); else go();
+        }
+        function haltFile(f, secs) { clearT(f); if (!f.el.paused) fadeTo(f, 0, secs); }
+        // Safari/iOS: elemen audio harus "dibuka" lewat sentuhan pengguna dulu sebelum boleh diputar otomatis
+        function unlockFiles(except) {
+            if (unlocked) return;
+            unlocked = true;
+            allFiles().forEach(f => {
+                if (f === except) return;
+                f.el.muted = true;
+                const done = () => { f.el.pause(); try { f.el.currentTime = 0; } catch (e) { } f.el.muted = false; };
+                const p = f.el.play();
+                if (p && p.then) p.then(done, () => { f.el.muted = false; }); else done();
+            });
+        }
+
+        function init() {
+            if (!ctx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return false;
+                ctx = new AC();
+                master = ctx.createGain();
+                master.gain.value = muted ? 0 : .8;
+                const comp = ctx.createDynamicsCompressor();
+                master.connect(comp);
+                comp.connect(ctx.destination);
+                // gema ruangan (reverb) dari noise yang meluruh
+                const len = Math.floor(ctx.sampleRate * 1.8), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+                for (let c = 0; c < 2; c++) {
+                    const d = ir.getChannelData(c);
+                    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+                }
+                revIn = ctx.createConvolver();
+                revIn.buffer = ir;
+                const wet = ctx.createGain();
+                wet.gain.value = .3;
+                revIn.connect(wet);
+                wet.connect(master);
+                noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+                const nd = noiseBuf.getChannelData(0);
+                for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+            }
+            if (ctx.state === 'suspended') ctx.resume();
+            return true;
+        }
+
+        // ---- jalur suara (bus) supaya tiap fase bisa dihentikan sendiri ----
+        function bus(send) {
+            const g = ctx.createGain();
+            g.connect(master);
+            if (send) {
+                const s = ctx.createGain();
+                s.gain.value = send;
+                g.connect(s);
+                s.connect(revIn);
+            }
+            buses.push(g);
+            return g;
+        }
+        function kill(g, tc) {
+            if (!g) return;
+            const n = ctx.currentTime;
+            g.gain.cancelScheduledValues(n);
+            g.gain.setTargetAtTime(0, n, tc || .05);
+        }
+        function env(g, t, a, peak, d) {
+            g.gain.setValueAtTime(.0001, t);
+            g.gain.linearRampToValueAtTime(peak, t + a);
+            g.gain.exponentialRampToValueAtTime(.0001, t + a + d);
+        }
+
+        // ---- bahan dasar: osilator, noise, riser ----
+        function osc(b, type, t, dur, f0, f1, peak, a, fc) {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = type;
+            o.frequency.setValueAtTime(f0, t);
+            if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+            env(g, t, a, peak, dur);
+            let n = o;
+            if (fc) {
+                const f = ctx.createBiquadFilter();
+                f.type = 'lowpass';
+                f.frequency.value = fc;
+                o.connect(f);
+                n = f;
+            }
+            n.connect(g);
+            g.connect(b);
+            o.start(t);
+            o.stop(t + a + dur + .05);
+        }
+        function noise(b, t, dur, type, f0, f1, peak, a, q) {
+            const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+            s.buffer = noiseBuf;
+            s.loop = true;
+            f.type = type;
+            f.Q.value = q || 1;
+            f.frequency.setValueAtTime(f0, t);
+            if (f1) f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+            env(g, t, a, peak, dur);
+            s.connect(f);
+            f.connect(g);
+            g.connect(b);
+            s.start(t);
+            s.stop(t + a + dur + .05);
+        }
+        function rise(g, t, dur, peak) {
+            g.gain.setValueAtTime(.0001, t);
+            g.gain.linearRampToValueAtTime(peak, t + dur);
+            g.gain.linearRampToValueAtTime(0, t + dur + .05);
+        }
+        function riser(b, t, dur, f0, f1, peak) {
+            const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+            s.buffer = noiseBuf;
+            s.loop = true;
+            f.type = 'bandpass';
+            f.Q.value = 3;
+            f.frequency.setValueAtTime(f0, t);
+            f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+            rise(g, t, dur, peak);
+            s.connect(f);
+            f.connect(g);
+            g.connect(b);
+            s.start(t);
+            s.stop(t + dur + .1);
+        }
+        function sweep(b, t, dur, f0, f1, peak) {
+            const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+            o.type = 'sawtooth';
+            o.frequency.setValueAtTime(f0, t);
+            o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+            f.type = 'lowpass';
+            f.frequency.value = 2200;
+            rise(g, t, dur, peak);
+            o.connect(f);
+            f.connect(g);
+            g.connect(b);
+            o.start(t);
+            o.stop(t + dur + .1);
+        }
+
+        // ---- instrumen ----
+        const kick = (b, t, v) => { osc(b, 'sine', t, .3, 150, 45, v, .002); noise(b, t, .02, 'highpass', 3000, 0, v * .3, .001); };
+        const hat = (b, t, v) => noise(b, t, .05, 'highpass', 7000, 0, v, .001);
+        const clap = (b, t, v) => noise(b, t, .12, 'bandpass', 1800, 0, v, .002, 1.2);
+        const bass = (b, t, f, v) => osc(b, 'sawtooth', t, .22, f, 0, v, .005, 420);
+        function impact(t, b, v) {
+            osc(b, 'sine', t, 1.4, 90, 26, v, .005);
+            noise(b, t, 1, 'lowpass', 4000, 200, .9 * v, .005);
+            noise(b, t, 1.5, 'highpass', 3000, 0, .45 * v, .01);
+        }
+        function sparkle(b, t, v) {
+            [880, 1175, 1568, 2093, 2637, 3136, 3951].forEach((f, i) => osc(b, 'sine', t + i * .055, .5, f, 0, .12 * v, .003));
+        }
+        function reveal(t, v) {
+            kill(rbus, .05);
+            const nf = pick('nama');
+            if (nf) {
+                // pakai file "nama-muncul": bunyi pertamanya (~0,35 dtk) jatuh tepat di saat t
+                const d = (t - ctx.currentTime) - .35;
+                playFile(nf, d >= 0 ? { delay: d, vol: v } : { offset: -d, vol: v });
+                return;
+            }
+            const b = bus(.4);
+            rbus = b;
+            impact(t, b, .9 * v);
+            sparkle(b, t + .05, v);
+            [220, 261.6, 329.6, 392].forEach(f => osc(b, 'sawtooth', t, .9, f, 0, .1 * v, .01, 2600));
+        }
+
+        // ---- beat elektronik selama animasi gelombang suara ----
+        function groove(after, forced) {
+            kill(gbus, .08);
+            const pf = forced === 'grup' && files.grup.length ? pick('grup') : pick('gel');
+            if (pf) {
+                // pakai file "gelombang-suara-N": posisi file mengikuti waktu animasi (setelah tap lewati mulai dari detik 4,7)
+                playFile(pf, { delay: .03, offset: after ? 4.7 : 0, fadeIn: .15, fadeOutAt: 8.0, total: 9.6 });
+                if (!after) reveal(ctx.currentTime + .03 + 3.41, 1);
+                return;
+            }
+            const t0 = ctx.currentTime + .03;
+            const b = bus(.25);
+            gbus = b;
+            const total = after ? 4.9 : 9.6, fadeAt = after ? 3.3 : 8.0;
+            b.gain.setValueAtTime(1, t0 + fadeAt);
+            b.gain.linearRampToValueAtTime(0, t0 + total);
+            const N = [55, 55, 65.4, 55, 82.4, 55, 73.4, 65.4];
+            for (let k = 0; k * BEAT < total; k++) {
+                const t = t0 + k * BEAT, el = k * BEAT;
+                const v = after ? 1 : Math.min(1, .35 + .65 * el / 3.4);
+                if (after || k >= 2) kick(b, t, .7 * v);
+                hat(b, t + BEAT / 2, .22 * v);
+                if (k % 2 === 1) clap(b, t, .3 * v);
+                bass(b, t, N[(k * 2) % 8], .22 * v);
+                bass(b, t + BEAT / 2, N[(k * 2 + 1) % 8], .18 * v);
+            }
+            if (!after) reveal(t0 + 3.41, 1);
+        }
+
+        // ---- dipanggil dari alur utama ----
+        function build() {
+            if (!init()) return;
+            stop();
+            const zf = pick('zoom');
+            unlockFiles(zf);
+            if (zf) {                                  // pakai file "galaksi-zoom" (fade-in 0,4 dtk)
+                playFile(zf, { vol: 1, fadeIn: .4 });
+                return;
+            }
+            const t = ctx.currentTime + .05, b = bus(.4);
+            bbus = b;
+            riser(b, t, 6.6, 250, 7000, .55);
+            sweep(b, t, 6.6, 110, 880, .12);
+            sweep(b, t, 6.6, 111.5, 884, .1);
+            osc(b, 'sine', t, .3, 42, 0, .5, 6.5);
+            for (let x = 0; x < 6.5; x += .8 * (1 - x / 6.6) + .12) kick(b, t + x, .25 + .5 * x / 6.6);
+        }
+        function finish(skipped) {
+            if (!init()) return;
+            kill(bbus, .08);
+            files.zoom.forEach(f => haltFile(f, .12));
+            const ff = pick('flash'), t = ctx.currentTime + .02;
+            if (ff)
+                playFile(ff, { vol: 1 });
+            else
+                impact(t, bus(.35), 1);
+            if (skipped) {
+                groove(true);
+                reveal(t + .1, .9);
+            } else groove(false);
+        }
+        function skipWave() {
+            if (!ctx) return;
+            groove(true);
+            reveal(ctx.currentTime + .05, .9);
+        }
+        function groupShow() {                        // suara animasi gelombang suara untuk tiap kelompok
+            if (!init()) return;
+            groove(false, 'grup');
+        }
+        function fade() {
+            if (!ctx) return;
+            files.gel.concat(files.grup, files.nama).forEach(f => { if (!f.el.paused) { clearT(f); fadeTo(f, 0, 1.6); } });
+            [gbus, rbus].forEach(g => {
+                if (!g) return;
+                const n = ctx.currentTime;
+                g.gain.cancelScheduledValues(n);
+                g.gain.setValueAtTime(g.gain.value, n);
+                g.gain.linearRampToValueAtTime(0, n + 1.6);
+            });
+        }
+        function stop() {
+            allFiles().forEach(f => haltFile(f, .05));
+            if (!ctx) return;
+            const old = buses;
+            buses = [];
+            bbus = gbus = rbus = null;
+            old.forEach(g => { kill(g, .03); setTimeout(() => { try { g.disconnect(); } catch (e) { } }, 600); });
+        }
+        function toggle() {
+            muted = !muted;
+            try { localStorage.setItem('gm', muted ? '1' : '0'); } catch (e) { }
+            if (master) master.gain.setTargetAtTime(muted ? 0 : .8, ctx.currentTime, .03);
+            allFiles().forEach(f => { f.el.volume = muted ? 0 : Math.min(1, f.v); });
+            return muted;
+        }
+        return { build, finish, skipWave, fade, stop, toggle, groupShow, isMuted: () => muted, files };
+    })();
+
+    // ==================== Undian, kelompok, dan antarmuka ====================
+    let skipNext = false;
+    let lastK = '';
+    let names = [];
+    let pool = [];
+    let groups = [];
+    let G = 6;
+    let pulls = 0;
+    function esc(s) {
+        return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    function showFin() {
+        $('fg').innerHTML = groups.map((g, i) => `<div class="fc"><b>KELOMPOK ${i + 1}</b>${g.map(n => `<div>${esc(n)}</div>`).join('') || '<div>-</div>'}</div>`).join('');
+        $('fin').classList.add('o');
+    }
+
+    function hideFin() {
+        $('fin').classList.remove('o');
+    }
+
+    const AV_A = 22;
+    const AV_B = [3, 16, 20, 23];
+    const AV_W = .1;
+    function cw(n, grp) {
+        const a = names.indexOf(n) + 1;
+        let w = 1;
+        for (const m of grp) {
+            const b = names.indexOf(m) + 1;
+            if ((a === AV_A && AV_B.includes(b)) || (b === AV_A && AV_B.includes(a)))
+                w *= AV_W;
+        }
+        return w;
+    }
+
+    function pick(g) {
+        const ws = pool.map(n => cw(n, groups[g]));
+        const s = ws.reduce((x, y) => x + y, 0);
+        let r = Math.random() * s;
+        let i = 0;
+        for (; i < pool.length - 1; i++) {
+            r -= ws[i];
+            if (r <= 0)
+                break;
+        }
+        return pool.splice(i, 1)[0];
+    }
+
+    function applyIf() {
+        if ($('tx').value + '|' + $('gn').value !== lastK && state === 'idle')
+            setup();
+    }
+
+    function pull() {
+        if (state !== 'idle' || !pool.length)
+            return;
+        const g = pulls++ % G;
+        const n = pick(g);
+        groups[g].push(n);
+        cur = { n, g };
+        sgn = Math.random() < .5 ? -1 : 1;
+        const a = Math.random() * 6.283;
+        const rr = 4 + Math.random() * 10;
+        target.set(Math.cos(a) * rr, (Math.random() - .5) * .2, Math.sin(a) * rr);
+        $('wv').style.display = 'none';
+        WF.stop();
+        $('go').disabled = true;
+        state = 'pull';
+        skipNext = false;
+        SFX.build();
+        $('hint').style.opacity = .55;
+        t0 = clock.elapsedTime;
+        flash.style.transition = 'none';
+    }
+
+    // ==================== Pertunjukan kelompok: tiap kelompok mendapat animasi gelombang suara sendiri ====================
+    // Setelah semua nama keluar: kelompok 1 tampil dengan animasi + daftar anggotanya, lalu kelompok 2, dst., baru tabel akhir.
+    let showTok = 0;
+    function startShow() {
+        const tok = ++showTok;
+        state = 'show';
+        upd();
+        const nextGroup = i => {
+            if (tok !== showTok) return;                      // dibatalkan (Reset / Terapkan)
+            if (i >= groups.length) {
+                state = 'idle';
+                upd();
+                showFin();
+                return;
+            }
+            const members = groups[i];
+            if (!members || !members.length) {
+                nextGroup(i + 1);
+                return;
+            }
+            $('wv').style.display = 'block';
+            SFX.groupShow();
+            WF.play('KELOMPOK ' + (i + 1), i, () => setTimeout(() => nextGroup(i + 1), 300), members);
+        };
+        setTimeout(() => nextGroup(0), 400);
+    }
+
+    function finish(t) {
+        state = 'wave';
+        hit = t;
+        sl.style.opacity = 0;
+        $('wv').style.display = 'block';
+        WF.play(cur.n, cur.g, () => {
+            state = 'idle';
+            upd();
+            if (!pool.length)
+                setTimeout(startShow, 600);
+        });
+        SFX.finish(skipNext);
+        if (skipNext) {
+            WF.skip();
+            skipNext = false;
+        }
+        void flash.offsetWidth;
+        flash.style.transition = 'opacity 1.3s';
+        flash.style.opacity = 0;
+        upd();
+        groupsUI();
+    }
+
+    function upd() {
+        const b = $('go');
+        const fin = !pool.length && pulls > 0;
+        b.disabled = state !== 'idle' || (!pool.length && !fin);
+        b.textContent = pool.length ? `GACHA · ${pool.length}` : (fin ? 'LIHAT HASIL' : 'SELESAI ✓');
+        $('hint').style.opacity = state === 'idle' ? 0 : .55;
+    }
+
+    function groupsUI() {
+        $('gl').innerHTML = groups.map((g, i) => `<div class="g"><b>Kelompok ${i + 1}</b> (${g.length})<br>${g.join(', ') || '-'}</div>`).join('');
+    }
+
+    function setup() {
+        lastK = $('tx').value + '|' + $('gn').value;
+        names = $('tx').value.split('\n').map(s => s.trim()).filter(Boolean);
+        G = Math.max(1, parseInt($('gn').value) || 1);
+        pool = [...names];
+        groups = Array.from({ length: G }, () => []);
+        pulls = 0;
+        $('wv').style.display = 'none';
+        showTok++;
+        WF.stop();
+        SFX.stop();
+        state = 'idle';
+        hideFin();
+        flash.style.transition = 'none';
+        flash.style.opacity = 0;
+        sl.style.opacity = 0;
+        upd();
+        groupsUI();
+        try {
+            localStorage.setItem('gg', JSON.stringify({ t: $('tx').value, g: G }));
+        }
+        catch (e) {
+        }
+    }
+
+    let sv = null;
+    try {
+        sv = JSON.parse(localStorage.getItem('gg'));
+    }
+
+    catch (e) {
+    }
+
+    $('tx').value = sv ? sv.t : Array.from({ length: 36 }, (_, i) => 'Siswa ' + (i + 1)).join('\n');
+    $('gn').value = sv ? sv.g : 6;
+    setup();
+    if (!sv)
+        $('dr').classList.add('o');
+    $('go').onclick = () => {
+        if (state === 'idle' && !pool.length && pulls)
+            showFin();
+        else
+            pull();
+    };
+
+    addEventListener('pointerdown', e => {
+        if (e.target.closest && e.target.closest('button,aside,#fin'))
+            return;
+        if (state === 'pull') {
+            skipNext = true;
+            t0 = clock.elapsedTime - D - .01;
+        }
+        else if (state === 'wave' || state === 'show') {
+            const k = WF.skip();
+            if (k === 1)
+                SFX.skipWave();
+            else if (k === 2)
+                SFX.fade();
+        }
+    });
+
+    $('fx').onclick = hideFin;
+    $('mu').textContent = SFX.isMuted() ? '🔇' : '🔊';
+    $('mu').onclick = () => {
+        $('mu').textContent = SFX.toggle() ? '🔇' : '🔊';
+    };
+    $('tx').onchange = $('gn').onchange = applyIf;
+    $('ap').onclick = $('cl').onclick = () => {
+        applyIf();
+        $('dr').classList.remove('o');
+    };
+
+    $('mb').onclick = () => {
+        applyIf();
+        $('dr').classList.toggle('o');
+    };
+
+    let rt = 0;
+    $('rst').onclick = () => {
+        if (state !== 'idle')
+            return;
+        const b = $('rst');
+        if (!rt) {
+            b.textContent = 'Yakin? Tap lagi';
+            rt = setTimeout(() => {
+                rt = 0;
+                b.textContent = '↺ Reset';
+            }, 3000);
+        }
+        else {
+            clearTimeout(rt);
+            rt = 0;
+            b.textContent = '↺ Reset';
+            setup();
+        }
+    };
+  </script>
+</body>
+</html>
